@@ -220,3 +220,139 @@ Fields:
 | ❌ Validate Token (Invalid)        | POST /auth/token/validate | 401 Unauthorized        |
 | ✅ Access Profile (With Token)     | GET /user/profile       | 200 OK                    |
 | ❌ Access Profile (Without Token)  | GET /user/profile       | 403 Forbidden             |
+
+# 🚀 User Management for Administrators in Retail Inventory System
+
+## 📌 Overview
+This update allows **administrators (ADMIN role)** to manage users while ensuring:
+- ✅ Only **ADMIN users** can **create, update, delete, and list users**.
+- ✅ Users can **only log in using valid email and password**.
+- ✅ **Role-Based Access Control (RBAC)** ensures security.
+
+---
+
+## 🛠 New Features Implemented
+### **🔹 1. Role-Based Access Control (RBAC)**
+- `/auth/login` and `/auth/register` → **Open to all**
+- `/admin/*` → **Restricted to `ADMIN` users only**
+- `/user/profile` → **Accessible to authenticated users**
+
+### **🔹 2. Administrator User Management**
+| **Method** | **Endpoint** | **Who Can Access?** | **Description** |
+|------------|-------------|---------------------|-----------------|
+| `GET` | `/admin/users` | ADMIN | List all users |
+| `GET` | `/admin/users/{id}` | ADMIN | Get user by ID |
+| `POST` | `/admin/users` | ADMIN | Create a new user |
+| `PUT` | `/admin/users/{id}` | ADMIN | Update user information |
+| `DELETE` | `/admin/users/{id}` | ADMIN | Delete a user |
+
+---
+
+## 🔐 Security Update (`SecurityConfig.java`)
+```java
+@Bean
+public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    http
+        .csrf(csrf -> csrf.disable())
+        .authorizeHttpRequests(auth -> auth
+            .requestMatchers("/auth/login", "/auth/register").permitAll()  // Public routes
+            .requestMatchers("/admin/**").hasRole("ADMIN")  // Only ADMINs can manage users
+            .requestMatchers("/user/profile").authenticated()  // All users can access their own profile
+            .anyRequest().authenticated()  // Protect all other endpoints
+        )
+        .oauth2ResourceServer(oauth2 -> oauth2
+            .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter()))
+        );
+    return http.build();
+}
+```
+
+✅ What this does:
+- Only ADMIN users can manage users (/admin/*).
+- All authenticated users can access /user/profile.
+- Unauthorized users are blocked (403 Forbidden).
+
+---
+
+## 🚀 Steps to Test the New Update
+
+1️⃣ Register an Admin User
+
+**Endpoint:**
+
+`POST /auth/register`
+
+**Request Body:**
+```json
+{
+    "firstName": "Admin",
+    "lastName": "User",
+    "email": "admin@example.com",
+    "password": "AdminPass123",
+    "role": "ADMIN",
+    "phoneNumber": "+1234567890"
+}
+```
+
+✅ Expected Response: `201 Created`
+
+2️⃣ Login as Admin
+
+**Endpoint:**
+
+`POST /auth/login`
+
+**Request Body:**
+```json
+{
+    "email": "admin@example.com",
+    "password": "AdminPass123"
+}
+```
+
+✅ Expected Response (200 OK):
+```json
+{
+    "message": "Login Successful",
+    "token": "eyJhbGciOiJSUzI1NiIsInR..."
+}
+```
+
+🚀 Copy the JWT token! You will need it to access admin routes.
+
+3️⃣ Use the Admin Token to Manage Users
+
+**Example: Get All Users (GET /admin/users)**
+
+**Headers:**
+```
+Authorization: Bearer YOUR_ADMIN_JWT_TOKEN_HERE
+```
+
+✅ Expected Response (200 OK):
+```json
+[
+    {
+        "id": 1,
+        "firstName": "Admin",
+        "lastName": "User",
+        "email": "admin@example.com",
+        "role": "ADMIN"
+    },
+    {
+        "id": 2,
+        "firstName": "John",
+        "lastName": "Doe",
+        "email": "johndoe@example.com",
+        "role": "EMPLOYEE"
+    }
+]
+```
+
+---
+
+## 🎯 Summary
+- ✅ Administrators can now create, update, and delete users.
+- ✅ Only authenticated users can log in and access their profile.
+- ✅ RBAC ensures only ADMIN users manage users.
+- ✅ Unauthorized users are blocked from admin routes (403 Forbidden).

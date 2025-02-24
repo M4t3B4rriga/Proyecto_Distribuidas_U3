@@ -35,8 +35,10 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/login", "/auth/register").permitAll()
-                        .anyRequest().authenticated()
+                        .requestMatchers("/auth/login", "/auth/register").permitAll()  // Public routes
+                        .requestMatchers("/admin/**").hasRole("ADMIN")  // Only ADMIN can access /admin/*
+                        .requestMatchers("/user/profile").authenticated()  // Any logged-in user can access their profile
+                        .anyRequest().authenticated()  // Other routes require authentication
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter()))
