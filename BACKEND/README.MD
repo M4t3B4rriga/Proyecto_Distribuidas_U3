@@ -356,3 +356,84 @@ Authorization: Bearer YOUR_ADMIN_JWT_TOKEN_HERE
 - ✅ Only authenticated users can log in and access their profile.
 - ✅ RBAC ensures only ADMIN users manage users.
 - ✅ Unauthorized users are blocked from admin routes (403 Forbidden).
+
+Here’s a clean and clear Markdown README explaining this new Store Management Feature in your project:
+
+# 🛒 Store Management Feature
+
+This update adds comprehensive **store management** capabilities to the Retail Inventory Management System, allowing administrators to create, update, and delete store entries, and enabling users to view store information.
+
+---
+
+## ✨ Feature Overview:
+
+- **Register new stores** with a name and physical address.
+- Allow users to **retrieve a list of all registered stores**.
+- Allow **administrators** to **edit or delete existing stores**.
+- Automatically track **creation and update timestamps** for each store.
+
+---
+
+## 📌 Endpoints & Access Control
+
+| Method | Endpoint                | Description              | Access Level |
+|--------|-------------------------|--------------------------|--------------|
+| `POST` | `/stores`               | Create a new store       | 🔒 ADMIN only |
+| `GET`  | `/stores`               | Retrieve all stores      | 🔑 Authenticated Users |
+| `GET`  | `/stores/{id}`          | Retrieve store by ID     | 🔒 Authenticated Users |
+| `PUT`  | `/stores/{id}`          | Update existing store    | 🔒 ADMIN only |
+| `DELETE` | `/stores/{id}`        | Delete store by ID       | 🔒 ADMIN only |
+
+---
+
+## ✅ Example Usage (Postman)
+
+### 1️⃣ **Create a New Store**
+- **Endpoint:** `POST /stores`
+- **Authorization:** Bearer token (ADMIN only)
+- **Body:**
+```json
+{
+    "name": "Central Store",
+    "address": "123 Main Street, NY"
+}
+```
+
+- **Expected Response:**
+```json
+{
+        "id": 1,
+        "name": "Central Store",
+        "address": "123 Main Street, NY",
+        "createdAt": "2025-02-25T10:30:00",
+        "updatedAt": "2025-02-25T10:30:00"
+}
+```
+
+### 2️⃣ **List All Stores (Accessible by All Users)**
+- **Endpoint:** `GET /stores`
+- **Authorization:** Required (Bearer TOKEN)
+- **Expected Response:**
+```json
+[
+        {
+                "id": 1,
+                "name": "Central Store",
+                "address": "123 Main Street, NY",
+                "createdAt": "2025-02-25T10:30:00",
+                "updatedAt": "2025-02-25T10:30:00"
+        }
+]
+```
+
+## 🛠 Technical Implementation Details
+
+### Role-Based Access Control (RBAC):
+- Ensures that only users with the ADMIN role can perform sensitive actions (create, update, delete).
+- Regular authenticated users can only view store details.
+
+### Automatic Timestamps:
+- `createdAt` and `updatedAt` fields automatically managed by JPA annotations (`@PrePersist`, `@PreUpdate`).
+
+### Database:
+- Fields (`created_at`, `updated_at`) automatically managed using JPA entity lifecycle callbacks.
