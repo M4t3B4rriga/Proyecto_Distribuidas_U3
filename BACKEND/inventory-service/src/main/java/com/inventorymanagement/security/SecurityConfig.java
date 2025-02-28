@@ -6,7 +6,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -32,16 +31,17 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        // ✅ EMPLOYEES & ADMINS can view inventory
-                        .requestMatchers(HttpMethod.GET, "/inventory/**").hasAnyRole("ADMIN", "EMPLOYEE")
+                        // ✅ EMPLOYEES & ADMINS can update stock
+                        .requestMatchers(HttpMethod.PUT, "/inventory/**").hasAnyRole("ADMIN", "EMPLOYEE")
 
-                        // ✅ Only ADMINS can modify inventory
-                        .requestMatchers(HttpMethod.POST, "/inventory").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/inventory/**").hasRole("ADMIN")
+                        // ✅ Only ADMINS can view inventory movements
+                        .requestMatchers(HttpMethod.GET, "/inventory/movements").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/inventory/movements/{storeId}").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/inventory/movements/metrics").hasRole("ADMIN")
 
                         .anyRequest().authenticated()
                 )
-                .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.decoder(jwtDecoder())));
+                .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())));
         return http.build();
     }
 
@@ -76,8 +76,17 @@ public class SecurityConfig {
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
         converter.setJwtGrantedAuthoritiesConverter(jwt -> {
             String role = jwt.getClaimAsString("role");
-            logger.info("Extracted Role from JWT: {}", role);
-            return List.of(new SimpleGrantedAuthority("ROLE_" + role.toUpperCase()));
+
+            if (role == null) {
+                logger.warn("JWT does not contain a role claim.");
+                return List.of();
+            }
+
+            // ✅ Convert role to uppercase and apply correct format
+            String formattedRole = "ROLE_" + role.toUpperCase();
+            logger.info("Extracted Role from JWT: {}", formattedRole);
+
+            return List.of(new SimpleGrantedAuthority(formattedRole));
         });
         return converter;
     }

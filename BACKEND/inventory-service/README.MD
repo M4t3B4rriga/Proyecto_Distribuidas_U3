@@ -180,3 +180,187 @@ Authorization: Bearer EMPLOYEE_JWT_TOKEN
 - ✅ `EMPLOYEE` can only view inventory.
 - ✅ No duplicate product entries per store.
 - ✅ Stock updates correctly when products are added or removed.
+
+# 🚀 **Inventory Movements & Role-Based Authorization - Testing Guide**
+
+## **🔍 Overview**
+This update ensures **automated inventory movements** and **strict role-based access control**:
+- ✅ **`EMPLOYEE` can update stock (ENTRY/EXIT).**
+- ✅ **`ADMIN` can view all movements and metrics.**
+- ❌ **`EMPLOYEE` cannot view movements or metrics.**
+- ✅ **Every stock update automatically logs a movement.**
+
+---
+
+## **🛠 How It Works**
+### **🔹 1. Automated Inventory Movements**
+- Every time stock is **added (`ENTRY`)** or **removed (`EXIT`)**, a movement is logged.
+- Employees no longer need to **manually register movements**.
+- The system **prevents negative stock exits**.
+
+### **🔹 2. Role-Based Access Control**
+| **Action** | **Admin** | **Employee** |
+|------------|----------|-------------|
+| Update Stock | ✅ Allowed | ✅ Allowed |
+| View All Movements | ✅ Allowed | ❌ Forbidden |
+| View Store Movements | ✅ Allowed | ❌ Forbidden |
+| View Movement Metrics | ✅ Allowed | ❌ Forbidden |
+
+---
+
+## **🛠 Testing API Endpoints**
+### 📌 **1. `EMPLOYEE` Registers an Inventory Entry (`ENTRY`)**
+#### **📌 Request**
+```http
+PUT http://localhost:8083/inventory/1/1?quantity=20&userId=100&movementType=ENTRY
+Authorization: Bearer EMPLOYEE_JWT_TOKEN
+```
+
+**Expected Response (200 OK):**
+```json
+{
+        "id": 1,
+        "storeId": 1,
+        "productId": 1,
+        "quantity": 70
+}
+```
+
+**Check Movement Log:**
+```sql
+SELECT * FROM inventory_movements WHERE store_id = 1 AND product_id = 1;
+```
+
+✅ An ENTRY movement should be logged.
+
+### 📌 **2. EMPLOYEE Registers an Inventory Exit (EXIT)**
+
+**Request:**
+```http
+PUT http://localhost:8083/inventory/1/1?quantity=10&userId=100&movementType=EXIT
+Authorization: Bearer EMPLOYEE_JWT_TOKEN
+```
+
+**Expected Response (200 OK):**
+```json
+{
+        "id": 1,
+        "storeId": 1,
+        "productId": 1,
+        "quantity": 60
+}
+```
+
+**Check Movement Log:**
+```sql
+SELECT * FROM inventory_movements WHERE store_id = 1 AND product_id = 1;
+```
+
+✅ An EXIT movement should be logged.
+
+### 📌 **3. EMPLOYEE Tries to View Movements (❌ Forbidden)**
+
+**Request:**
+```http
+GET http://localhost:8083/inventory/movements
+Authorization: Bearer EMPLOYEE_JWT_TOKEN
+```
+
+**Expected Response (403 Forbidden):**
+```json
+{
+        "error": "Forbidden"
+}
+```
+
+**Check Logs:**
+```sh
+tail -f logs/spring-boot.log
+```
+
+✅ Logs should confirm that access was denied.
+
+### 📌 **4. ADMIN Retrieves All Movements (✅ Allowed)**
+
+**Request:**
+```http
+GET http://localhost:8083/inventory/movements
+Authorization: Bearer ADMIN_JWT_TOKEN
+```
+
+**Expected Response (200 OK):**
+```json
+[
+        {
+                "id": 1,
+                "storeId": 1,
+                "productId": 1,
+                "userId": 100,
+                "quantity": 20,
+                "movementType": "ENTRY",
+                "movementDate": "2025-02-27T14:30:00"
+        },
+        {
+                "id": 2,
+                "storeId": 1,
+                "productId": 1,
+                "userId": 100,
+                "quantity": 10,
+                "movementType": "EXIT",
+                "movementDate": "2025-02-27T14:35:00"
+        }
+]
+```
+
+**Check Logs:**
+```sh
+tail -f logs/spring-boot.log
+```
+
+✅ Logs should confirm an ADMIN accessed movements.
+
+### 📌 **5. ADMIN Retrieves Movement Metrics (✅ Allowed)**
+
+**Request:**
+```http
+GET http://localhost:8083/inventory/movements/metrics
+Authorization: Bearer ADMIN_JWT_TOKEN
+```
+
+**Expected Response (200 OK):**
+```json
+{
+        "ENTRY": 5,
+        "EXIT": 3
+}
+```
+
+**Check Logs:**
+```sh
+tail -f logs/spring-boot.log
+```
+
+✅ Logs should confirm an ADMIN accessed metrics.
+
+### 📌 **6. EMPLOYEE Tries to View Metrics (❌ Forbidden)**
+
+**Request:**
+```http
+GET http://localhost:8083/inventory/movements/metrics
+Authorization: Bearer EMPLOYEE_JWT_TOKEN
+```
+
+**Expected Response (403 Forbidden):**
+```json
+{
+        "error": "Forbidden"
+}
+```
+
+**Check Logs:**
+```sh
+tail -f logs/spring-boot.log
+```
+
+✅ Logs should confirm that access was denied.
+
