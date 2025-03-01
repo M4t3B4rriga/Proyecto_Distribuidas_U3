@@ -1,0 +1,13 @@
+server:
+  port: 8761  # Default Eureka Server port
+
+spring:
+  application:
+    name: eureka-server
+
+eureka:
+  client:
+    register-with-eureka: false  # 🚫 Eureka Server does NOT register itself
+    fetch-registry: false        # 🚫 Eureka Server does NOT fetch other services
+  server:
+    waitTimeInMsWhenSyncEmpty: 5  # ✅ Fast startup
