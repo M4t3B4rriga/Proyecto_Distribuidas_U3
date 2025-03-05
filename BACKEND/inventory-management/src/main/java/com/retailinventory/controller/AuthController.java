@@ -14,7 +14,12 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/auth")
+@CrossOrigin(origins = "http://localhost:5173",
+allowedHeaders = "*",
+allowCredentials = "true")
+
 public class AuthController {
+    
     private final AuthService authService;
     private final JwtUtil jwtUtil;
 
@@ -33,9 +38,10 @@ public class AuthController {
 
         try {
             User registeredUser = authService.registerUser(user);
+            registeredUser.setPassword(null);
             return ResponseEntity.ok(registeredUser);
         } catch (RuntimeException e) {
-            return ResponseEntity.status(400).body(Map.of("error", e.getMessage()));
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
 
