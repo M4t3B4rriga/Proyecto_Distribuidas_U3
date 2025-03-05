@@ -33,28 +33,23 @@ const Auth = () => {
       return;
     }
 
-     // Additional validation for registration
-    if (!isLogin) {
-      if (!formData.firstName || !formData.lastName) {
-        setError("Nombre y apellido son obligatorios");
-        return;
-      }
-
-      // Password strength check
-      if (formData.password.length < 8) {
-        setError("La contraseña debe tener al menos 8 caracteres");
-        return;
-      }
-    }
-
     try {
-      if (isLogin){
-      const response = await authService.login(formData.email, formData.password);
+      if (isLogin) {
+        const response = await authService.login(formData.email, formData.password);
+        console.log("Usuario autenticado:", response);
 
-      console.log("Usuario autenticado:", response);
+        // Decode token to check role
+        const token = response.token;
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace('-', '+').replace('_', '/');
+        const decodedToken = JSON.parse(window.atob(base64));
 
-      // Redirigir al dashboard
-      navigate("/dashboard");
+        // Route based on role
+        if (decodedToken.role === 'ADMIN') {
+          navigate("/admin");
+        } else {
+          navigate("/dashboard");
+        }
       } else {
         const registrationData = {
           firstName: formData.firstName,
@@ -71,11 +66,12 @@ const Auth = () => {
         // Show success message and switch to login
         setIsLogin(true);
         setError("Registro exitoso. Por favor, inicia sesión.");
-    } 
+      } 
     
   }
   catch (err) {
-        setError("Ocurrió un error al intentar iniciar sesión.");
+    console.error("Full error object:", err);
+    setError(err.message || "Ocurrió un error al intentar iniciar sesión.");
     }
   };
 

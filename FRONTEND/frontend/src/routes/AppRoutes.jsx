@@ -1,4 +1,5 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import React, {useEffect, useState}from 'react';
 import Login from "../pages/Login";
 import MainLayout from "../layouts/MainLayout";
 import AdminDashboard from "../pages/AdminDashboard";
@@ -20,20 +21,41 @@ const decodeToken = (token) => {
 
 
 const ProtectedRoute = ({ children, adminOnly = false }) => {
-  
-  const token = authService.getToken();
+  const navigate = useNavigate();
+  const [isValid, setIsValid] = useState(false);
+  useEffect(() => {
+    const checkToken = async () => {
+      const token = authService.getToken();
+      if (!token) {
+        navigate('/');
+        return;
+      }
+      try {
+        const tokenValid = await authService.validateToken();
+        if (!tokenValid) {
+          setIsValid(false);
+          navigate('/');
+          return;
+        }
 
-  // If not authenticated, redirect to login
-  if (!token) {
-    return <Navigate to="/" replace />;
-  }
+        // Decode token to check user role
+        const decodedToken = decodeToken(token);
+        
+        // If admin-only route, check user role
+        if (adminOnly && decodedToken.role !== 'ADMIN') {
+          navigate('/dashboard');
+        }
+      } catch (error) {
+        console.error('Token validation error:', error);
+        navigate('/');
+      }
+    };
 
-  // Decode token to check user role
-  const decodedToken = decodeToken(token);
-  
-  // If admin-only route, check user role
-  if (adminOnly && decodedToken.role !== 'ADMIN') {
-    return <Navigate to="/dashboard" replace />;
+    checkToken();
+  }, [navigate]);
+
+  if (!isValid) {
+    return null;
   }
 
   return children;

@@ -10,22 +10,44 @@ export const authService = {
     try {
       const response = await axios.post(`${API_URL}/login`, { email, password }
         ,{headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
         }}
       );
+
+      this.logout();
       
       // Save token to localStorage
       localStorage.setItem("token", response.data.token);
       
       return response.data;
     } catch (error) {
-      // Handle login errors
-      console.error("Login error:", error.response ? error.response.data : error.message);
-      throw new Error(
-        error.response?.data?.message ||
-        error.response?.data ||
-        "Login failed");
+      // More detailed error logging
+      console.error("Login error details:", {
+        status: error.response?.status,
+        data: error.response?.data,
+        headers: error.response?.headers,
+        message: error.message,
+        config: error.config
+      });
+
+
+
+      // More specific error handling
+      if (error.response) {
+        if (error.response.status === 401) {
+          throw new Error("Credenciales inválidas. Por favor, verifica tu correo y contraseña.");
+        } else if (error.response.status === 403) {
+          throw new Error("Acceso denegado. No tienes permiso para iniciar sesión.");
+        } else {
+          throw new Error(`Error de inicio de sesión: ${error.response.status}`);
+        }
+      } else if (error.request) {
+        throw new Error("No se pudo conectar con el servidor. Por favor, verifica tu conexión.");
+      } else {
+        throw new Error("Ocurrió un error inesperado. Inténtalo de nuevo.");
       }
+    }
   },
 
   // Register
@@ -57,18 +79,19 @@ export const authService = {
   },
 
   // Validate Token
-  async validateToken(token) {
+  async validateToken() {
+    const token = this.getToken();
+    if (!token) return false;
+
     try {
-      const response = await axios.post(`${API_URL}/token/validate`, { token });
-      return response.data;
+      await axios.post(`${API_URL}/token/validate`, { token });
+      return response.status === 200;
     } catch (error) {
-      throw new Error(
-        error.response?.data?.message || 
-        "Token validation failed"
-      );
+      // Token is invalid or expired
+      this.logout();
+      return false;
     }
   },
-
   // Logout
   logout() {
     localStorage.removeItem("token");
@@ -76,7 +99,7 @@ export const authService = {
 
   // Check if user is authenticated
   isAuthenticated() {
-    const token = localStorage.getItem("token");
+    const token = this.getItem("token");
     return !!token;
   },
 
@@ -88,14 +111,14 @@ export const authService = {
 
 // Axios interceptor to add token to requests
 axios.interceptors.request.use(
-  config => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      config.headers['Authorization'] = `Bearer ${token}`;
-    }
-    return config;
-  },
+  response => response,
   error => {
+    if (error.response && error.response.status === 401) {
+      // Token is invalid or expired
+      authService.logout();
+      // Redirect to login page
+      window.location = '/';
+    }
     return Promise.reject(error);
   }
 );
