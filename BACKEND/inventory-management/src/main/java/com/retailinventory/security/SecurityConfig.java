@@ -8,6 +8,7 @@ import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -46,9 +47,13 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/login", "/auth/register").permitAll()
                         .requestMatchers("/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/stores").authenticated()  // Any authenticated user can view stores
-                        .requestMatchers("/stores/**").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/stores/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/stores/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/stores/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/stores/**").hasRole("ADMIN")
                         .requestMatchers("/stores/**").hasRole("ADMIN")  // Only ADMIN can modify stores
+
+                        .requestMatchers("/auth/token/validate").authenticated() 
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
@@ -62,7 +67,7 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"));
-        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Cache-Control", "Access-Control-Allow-Origin", "Access-Control-Allow-Headers"));
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Cache-Control"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

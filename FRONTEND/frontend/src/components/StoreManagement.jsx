@@ -79,7 +79,7 @@ const StoreManagement = () => {
           onChange={(e) => 
             editingStore 
               ? setEditingStore({...editingStore, name: e.target.value}) 
-              : setNewStore({...newUser, name: e.target.value})
+              : setNewStore({...newStore, name: e.target.value})
           }
           className="border p-2 rounded"
           required 

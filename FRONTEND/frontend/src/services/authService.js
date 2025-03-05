@@ -84,10 +84,18 @@ export const authService = {
     if (!token) return false;
 
     try {
-      await axios.post(`${API_URL}/token/validate`, { token });
-      return response.status === 200;
+      const response=await axios.post(`${API_URL}/token/validate`,{token},
+      {
+        headers:{
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+      }
+      );
+      return response.status===200;
     } catch (error) {
       // Token is invalid or expired
+      console.error("Error validando token:", error.response?.data || error.message);
       this.logout();
       return false;
     }
@@ -111,14 +119,12 @@ export const authService = {
 
 // Axios interceptor to add token to requests
 axios.interceptors.request.use(
-  response => response,
-  error => {
-    if (error.response && error.response.status === 401) {
-      // Token is invalid or expired
-      authService.logout();
-      // Redirect to login page
-      window.location = '/';
+  config => {
+    const token = authService.getToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
-    return Promise.reject(error);
-  }
+    return config;
+  },
+  error => Promise.reject(error)
 );

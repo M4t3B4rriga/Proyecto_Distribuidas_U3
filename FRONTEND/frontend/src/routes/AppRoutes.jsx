@@ -22,7 +22,7 @@ const decodeToken = (token) => {
 
 const ProtectedRoute = ({ children, adminOnly = false }) => {
   const navigate = useNavigate();
-  const [isValid, setIsValid] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   useEffect(() => {
     const checkToken = async () => {
       const token = authService.getToken();
@@ -33,7 +33,7 @@ const ProtectedRoute = ({ children, adminOnly = false }) => {
       try {
         const tokenValid = await authService.validateToken();
         if (!tokenValid) {
-          setIsValid(false);
+          authService.logout();
           navigate('/');
           return;
         }
@@ -42,33 +42,50 @@ const ProtectedRoute = ({ children, adminOnly = false }) => {
         const decodedToken = decodeToken(token);
         
         // If admin-only route, check user role
-        if (adminOnly && decodedToken.role !== 'ADMIN') {
+        if (adminOnly && (!decodedToken || decodedToken.role !== 'ADMIN')) {
           navigate('/dashboard');
         }
       } catch (error) {
         console.error('Token validation error:', error);
+        authService.logout();
         navigate('/');
+      } finally {
+        setIsLoading(false);
       }
     };
 
     checkToken();
-  }, [navigate]);
+  }, [navigate, adminOnly]);
 
-  if (!isValid) {
-    return null;
+  if (isLoading) {
+    return <div>Loading....</div>;
   }
 
   return children;
 };
 
 const AppRoutes = () => {
+  authService.logout=function(){
+    localStorage.removeItem("token"); // Borra el token
+    sessionStorage.clear();
+    caches.keys().then((names) => names.forEach((name) => caches.delete(name))); 
+    window.location.href = "/login"; // Redirige al login
+  };
+
+  useEffect(() => {
+    window.history.pushState(null, "", window.location.href);
+    window.onpopstate = () => {
+      window.history.pushState(null, "", window.location.href);
+    };
+  }, []);
+  
   return (
     <Router>
       <Routes>
-        {/* Public Routes */}
+        {/* Public Routes*/ }
         <Route path="/" element={<Login />} />
         
-        {/* Protected Routes */}
+        {/* Protected Routes*/ }
         <Route 
           path="/dashboard" 
           element={
