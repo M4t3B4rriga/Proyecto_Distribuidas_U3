@@ -23,10 +23,13 @@ const decodeToken = (token) => {
 const ProtectedRoute = ({ children, adminOnly = false }) => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
+  const [isAuthenticated, setAuthenticated]=useState(false);
   useEffect(() => {
     const checkToken = async () => {
       const token = authService.getToken();
+      console.log("Token obtenido en ProtectedRoute:", token);
       if (!token) {
+        console.log("No hay token, redirigiendo al login...");
         navigate('/');
         return;
       }
@@ -40,11 +43,14 @@ const ProtectedRoute = ({ children, adminOnly = false }) => {
 
         // Decode token to check user role
         const decodedToken = decodeToken(token);
+        console.log("Token decodificado:", decodedToken);
         
         // If admin-only route, check user role
         if (adminOnly && (!decodedToken || decodedToken.role !== 'ADMIN')) {
           navigate('/dashboard');
+          return;
         }
+        setAuthenticated(true);
       } catch (error) {
         console.error('Token validation error:', error);
         authService.logout();
@@ -61,17 +67,10 @@ const ProtectedRoute = ({ children, adminOnly = false }) => {
     return <div>Loading....</div>;
   }
 
-  return children;
+  return isAuthenticated ? children : null;
 };
 
 const AppRoutes = () => {
-  authService.logout=function(){
-    localStorage.removeItem("token"); // Borra el token
-    sessionStorage.clear();
-    caches.keys().then((names) => names.forEach((name) => caches.delete(name))); 
-    window.location.href = "/login"; // Redirige al login
-  };
-
   useEffect(() => {
     window.history.pushState(null, "", window.location.href);
     window.onpopstate = () => {

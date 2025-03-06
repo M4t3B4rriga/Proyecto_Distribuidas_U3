@@ -19,6 +19,9 @@ export const authService = {
       
       // Save token to localStorage
       localStorage.setItem("token", response.data.token);
+      localStorage.setItem("token", response.data.token);
+      console.log("Token guardado:", localStorage.getItem("token"));
+
       
       return response.data;
     } catch (error) {
@@ -92,6 +95,7 @@ export const authService = {
         },
       }
       );
+      console.log("Token validado con éxito:", response.status);
       return response.status===200;
     } catch (error) {
       // Token is invalid or expired
