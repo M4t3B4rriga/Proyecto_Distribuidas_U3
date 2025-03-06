@@ -33,12 +33,10 @@ const ProtectedRoute = ({ children, adminOnly = false }) => {
       const token = authService.getToken();
       console.log("Token obtenido en ProtectedRoute:", token);
       if (!token) {
-HEAD
         console.log("No hay token, redirigiendo al login...");
         navigate('/');
 
         navigate("/");
- edbf17e36479b5c4430368fa42ef02e2bb54bcb0
         return;
       }
       try {
@@ -49,17 +47,15 @@ HEAD
           return;
         }
         const decodedToken = decodeToken(token);
- HEAD
+ 
         console.log("Token decodificado:", decodedToken);
         
         // If admin-only route, check user role
         if (adminOnly && (!decodedToken || decodedToken.role !== 'ADMIN')) {
           navigate('/dashboard');
           return;
-
-        if (adminOnly && (!decodedToken || decodedToken.role !== "ADMIN")) {
+          }if (adminOnly && (!decodedToken || decodedToken.role !== "ADMIN")) {
           navigate("/dashboard");
- edbf17e36479b5c4430368fa42ef02e2bb54bcb0
         }
         setAuthenticated(true);
       } catch (error) {
