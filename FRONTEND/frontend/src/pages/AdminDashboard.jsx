@@ -26,13 +26,13 @@ const AdminDashboard = () => {
           Gestión de Tiendas
         </button>
         <button 
-          className={`px-4 py-2 mr-2${activeTab === 'users' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
+          className={`px-4 py-2 mr-2 ${activeTab === 'users' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
           onClick={() => setActiveTab('users')}
         >
           Gestión de Usuarios
         </button>
         <button 
-          className={`px-4 py-2 mr-2${activeTab === 'products' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
+          className={`px-4 py-2 mr-2 ${activeTab === 'products' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
           onClick={() => setActiveTab('products')}
         >
           Gestión de Productos
